@@ -7,13 +7,8 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
-using Windows.Data.Json;
 using System.Runtime.Serialization;
-using Windows.Storage;
-using Windows.Storage.Streams;
 using System.IO;
-
-using Byteopia.Helpers;
 
 namespace Byteopia.Music.GoogleMusicAPI
 {
@@ -59,16 +54,10 @@ namespace Byteopia.Music.GoogleMusicAPI
         public API()
         {
             client = new GoogleHTTP();
-            client.CookiesChanged += client_CookiesChanged;
         }
 
         public SmartObservableCollection<GoogleMusicSong> Tracks = new SmartObservableCollection<GoogleMusicSong>();
         public ObservableCollection<GoogleMusicPlaylist> Playlists = new ObservableCollection<GoogleMusicPlaylist>();
-
-        public bool HasSession()
-        {
-            return this.DeseralizeSession(); 
-        }
 
         /// <summary>
         /// Login via email and pw
@@ -78,10 +67,6 @@ namespace Byteopia.Music.GoogleMusicAPI
         /// <returns></returns>
         public async Task<Boolean> Login(String email, String password)
         {
-            bool hasSession = this.DeseralizeSession();
-            if (hasSession)
-                return true;
-
             HttpContent content = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("service", "sj"), // skyjam
@@ -100,8 +85,6 @@ namespace Byteopia.Music.GoogleMusicAPI
 
             // Hit the servers so our cookie container can store the cookies
             await HitForSessionCookies();
-
-            await this.SeralizeSession();
 
             return true;
         }
@@ -235,14 +218,6 @@ namespace Byteopia.Music.GoogleMusicAPI
 
             return search.Results;
         }
-        /// <summary>
-        /// Launches the store results page with a given query
-        /// </summary>
-        /// <param name="query">The query term</param>
-        public async void QueryStore(String query)
-        {
-            await Windows.System.Launcher.LaunchUriAsync(new Uri(String.Format("https://play.google.com/store/search?c=music&feature=music_play_menu&q={0}", query)));
-        }
 
         /// <summary>
         /// Modify a songs meta data
@@ -359,72 +334,6 @@ namespace Byteopia.Music.GoogleMusicAPI
         public bool NeedsAuth()
         {
             return client.AuthroizationToken.Equals(String.Empty);
-        }
-
-        void client_CookiesChanged(object sender, EventArgs e)
-        {
-            this.SeralizeSession();
-        }
-
-        public async void DeleteFile()
-        {
-            var dumpFile = await ApplicationData.Current.RoamingFolder.CreateFileAsync(_apiFileName,
-               CreationCollisionOption.ReplaceExisting);
-
-            await FileIO.WriteTextAsync(dumpFile, "");
-        }
-
-        public async Task<bool> SeralizeLibrary()
-        {
-            return true;
-        }
-        public async Task<bool> DeseralizeLibrary()
-        {
-            return true;
-        }
-
-        public async Task<bool> SeralizeSession()
-        {
-            String googleClient = String.Empty;
-
-            try
-            {
-                googleClient = JSON.SeralizeObject<Session>(new Session()
-                {
-                     AuthToken = client.AuthroizationToken,
-                     Cookies = client.CookieManager.GetCookiesList()
-                });
-
-                Settings.SetSerializedValue("session", googleClient, true);
-            }
-            catch
-            { 
-                throw;
-                return false; 
-            }
-
-            return true;
-        }
-
-        public bool DeseralizeSession()
-        {
-            Session tmp = null;
-            try
-            {
-                tmp = JSON.DeserializeObject<Session>(Settings.GetSerializedStringValue("session", true));
-
-                this.client.AuthroizationToken = tmp.AuthToken;
-                this.Client.CookieManager.SetCookiesFromList(tmp.Cookies);
-                
-            }
-            catch
-            {
-                //throw;
-                return false;
-            }
-
-
-            return true;
         }
     }
 }

@@ -8,9 +8,8 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Windows.Storage;
 
-using Byteopia.Helpers;
+using Newtonsoft.Json;
 
 namespace Byteopia.Music.GoogleMusicAPI
 {
@@ -114,7 +113,7 @@ namespace Byteopia.Music.GoogleMusicAPI
         /// <returns></returns>
         public async Task<T> POST<T>(Uri address, HttpContent content = null)
         {
-            return JSON.Deserialize<T>(await POST(address, content));
+            return JsonConvert.DeserializeObject<T>(await POST(address, content));
         }
 
         /// <summary>
@@ -125,7 +124,7 @@ namespace Byteopia.Music.GoogleMusicAPI
         /// <returns></returns>
         public async Task<T> GET<T>(Uri address)
         {
-            return JSON.Deserialize<T>(await GET(address));
+            return JsonConvert.DeserializeObject<T>(await GET(address));
         }
 
         /// <summary>
@@ -142,18 +141,11 @@ namespace Byteopia.Music.GoogleMusicAPI
             HttpResponseMessage responseMessage = null;
             HttpRequestMessage requestMessage = null;
 
-            try
-            {
-                String reqUri = BuildGoogleRequest(address).ToString();
-                requestMessage = new HttpRequestMessage(HttpMethod.Post, reqUri);
-                requestMessage.Content = content;
-                requestMessage.Headers.Add("Cookie", cookieManager.GetCookies());
-                responseMessage = await client.SendAsync(requestMessage);
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
+            String reqUri = BuildGoogleRequest(address).ToString();
+            requestMessage = new HttpRequestMessage(HttpMethod.Post, reqUri);
+            requestMessage.Content = content;
+            requestMessage.Headers.Add("Cookie", cookieManager.GetCookies());
+            responseMessage = await client.SendAsync(requestMessage);
 
             LastStatusCode = responseMessage.StatusCode;
 
@@ -167,14 +159,7 @@ namespace Byteopia.Music.GoogleMusicAPI
 
             String retnData = String.Empty;
 
-            try
-            {
-                retnData = await responseMessage.Content.ReadAsStringAsync();
-            }
-            catch (Exception e)
-            {
-                throw; // Bubble up
-            }
+            retnData = await responseMessage.Content.ReadAsStringAsync();
 
             return retnData;
         }
@@ -200,7 +185,7 @@ namespace Byteopia.Music.GoogleMusicAPI
                 requestMessage.Headers.Add("Cookie", cookieManager.GetCookies());
                 responseMessage = await client.SendAsync(requestMessage);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw;
             }
@@ -217,14 +202,7 @@ namespace Byteopia.Music.GoogleMusicAPI
 
             String retnData = String.Empty;
 
-            try
-            {
-                retnData = await responseMessage.Content.ReadAsStringAsync();
-            }
-            catch (Exception e)
-            {
-                throw; // Bubble up
-            }
+            retnData = await responseMessage.Content.ReadAsStringAsync();
 
             return retnData;
         }
